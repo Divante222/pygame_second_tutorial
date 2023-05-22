@@ -19,6 +19,9 @@ moving_right = False
 moving_up = False
 moving_down = False
 
+#define font
+font = pygame.font.Font("assets/fonts/AtariClassic.ttf", 20) # second argument is how big the font will be
+
 
 # helper function to scale image
 def scale_img(image, scale):
@@ -26,6 +29,11 @@ def scale_img(image, scale):
     h = image.get_height()
     return pygame.transform.scale(image, (w * scale, h * scale))
 
+
+# load heart images
+heart_empty = bow_image = scale_img(pygame.image.load('assets/images/items/heart_empty.png').convert_alpha(), constants.ITEM_SCALE)
+heart_half = bow_image = scale_img(pygame.image.load('assets/images/items/heart_half.png').convert_alpha(), constants.ITEM_SCALE)
+heart_full = bow_image = scale_img(pygame.image.load('assets/images/items/heart_full.png').convert_alpha(), constants.ITEM_SCALE)
 
 #load weapon images
 bow_image = scale_img(pygame.image.load('assets/images/weapons/bow.png').convert_alpha(), constants.WEAPON_SCALE)
@@ -52,15 +60,62 @@ for mob in mob_types:
     mob_animations.append(animation_list)
     
 
+# function for displaying game info
+def draw_info():
+    pygame.draw.rect(screen, constants.PANEL, (0,0, constants.SCREEN_WIDTH, 50) )
+    pygame.draw.line(screen, constants.WHITE, (0, 50), (constants.SCREEN_WIDTH, 50))
+    #draw lives
+    half_heart_drawn = False
+    for i in range(5):
+        if player.health >= ((i + 1) * 20):
+            screen.blit(heart_full, (10 + i * 50, 0))
+        elif (player.health % 20 > 0) and half_heart_drawn == False:
+            screen.blit(heart_half, (10 + i * 50, 0))
+            half_heart_drawn = True
+        else:
+            screen.blit(heart_empty, (10 + i * 50, 0))
+
+
+# damage text class
+class DamageText(pygame.sprite.Sprite):
+    def __init__(self, x, y, damage, color):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = font.render(damage, True, color)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x,y)
+        self.counter = 0
+    
+
+    def update(self):
+        # move damage text up
+        self.rect.y -= 1
+        #delete the counter after a few seconds
+        self.counter += 1
+        if self.counter> 30:
+            self.kill()
+
+
 ## create player
-player = Character(100, 100, mob_animations,0)
+player = Character(100, 100, 2, mob_animations,0)
+
+# create enemy 
+enemy = Character(200, 300, 100, mob_animations, 1)
+
+
 # create players weapon
 bow = Weapon(bow_image, arrow_image)
 
+# create empty enemy list
+enemy_list = []
+enemy_list.append(enemy)
 
 # create sprite groups
+damage_text_group = pygame.sprite.Group()
 arrow_group = pygame.sprite.Group()
 
+# # temporary damage text
+# damage_text = DamageText(300, 400, '15', constants.RED)
+# damage_text_group.add(damage_text)
 
 run = True
 while run:
@@ -84,14 +139,32 @@ while run:
     
     # move player
     player.move(dx, dy)
+
+    #creating enemies
+    for enemy in enemy_list:
+        enemy.update()
+    for enemy in enemy_list:
+        enemy.draw(screen)
+    
+    
+
     
     #update player
     player.update()
     arrow = bow.update(player)
     if arrow:
         arrow_group.add(arrow)
-    print(arrow_group)
+    
     # arrow_group.draw(screen)
+    for arrow in arrow_group:
+        damage, damage_pos = arrow.update(enemy_list)
+        if damage:
+            damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage),constants.RED)
+            damage_text_group.add(damage_text)
+    damage_text_group.update()
+    damage_text_group.draw(screen)
+
+    draw_info()
 
     #draw player on screen 
     player.draw(screen)
