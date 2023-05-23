@@ -5,6 +5,7 @@ import math
 class Character():
     def __init__(self, x, y, health, mob_animation, char_type):
         self.char_type = char_type
+        self.score = 0
         self.animation_list = mob_animation[char_type]
         self.flip = False
         self.frame_index = 0
@@ -16,7 +17,7 @@ class Character():
 
 
         self.image = self.animation_list[self.action][self.frame_index]
-        self.rect = pygame.Rect(0,0, 40,40)
+        self.rect = pygame.Rect(0,0, constants.TILE_SIZE, constants.TILE_SIZE)
         self.rect.center = (x,y)
 
 
