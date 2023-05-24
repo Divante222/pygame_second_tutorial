@@ -1,4 +1,5 @@
 import pygame
+import csv
 import constants
 from character import Character
 from weapon import Weapon
@@ -13,6 +14,10 @@ pygame.display.set_caption('dungeon crawler')
 
 #create clock for maintaining frame rate
 clock = pygame.time.Clock()
+
+# define game variables
+level = 1
+screen_scroll = [0,0]
 
 
 ## define player movement variables
@@ -110,14 +115,22 @@ def draw_info():
     #show score
     draw_text(f'X{player.score}', font, constants.WHITE, constants.SCREEN_WIDTH - 100, 15)
 
-world_data = [
-[7, 7, 7, 7, 7, 7],
-[7, 0, 1, 1, 3, 7],
-[7, 3, 4, 5, 5, 7],
-[7, 6, 6, 6, 6, 7],
-[7, 0, 0, 0, 0, 7],
-[7, 7, 7, 0, 7, 7]
-]
+
+#create empty tile list
+world_data = []
+for row in range(constants.ROWS):
+    r = [-1] * constants.COLS
+    world_data.append(r)
+
+#load in level data and create world
+with open(f"levels/level{level}_data.csv", newline="") as csvfile:
+    reader = csv.reader(csvfile, delimiter= ",")
+    for x, row in enumerate(reader):
+        for y, tile in enumerate(row):
+            world_data[x][y] = int(tile)
+
+
+
 
 world = World()
 world.process_data(world_data, tile_list)
@@ -160,7 +173,7 @@ class DamageText(pygame.sprite.Sprite):
 
 
 ## create player
-player = Character(100, 100, 30, mob_animations,0)
+player = Character(400, 300, 30, mob_animations,0)
 
 # create enemy 
 enemy = Character(200, 300, 100, mob_animations, 1)
@@ -216,7 +229,9 @@ while run:
         dy = constants.SPEED
     
     # move player
-    player.move(dx, dy)
+    screen_scroll = player.move(dx, dy)
+    print(screen_scroll)
+
 
     #creating enemies
     for enemy in enemy_list:
@@ -227,7 +242,8 @@ while run:
     
     
     
-    #update player
+    #update all objects
+    world.update(screen_scroll)
     player.update()
     arrow = bow.update(player)
     if arrow:
