@@ -16,7 +16,7 @@ pygame.display.set_caption('dungeon crawler')
 clock = pygame.time.Clock()
 
 # define game variables
-level = 1
+level = 3
 screen_scroll = [0,0]
 
 
@@ -53,7 +53,10 @@ for x in range(4):
 # load potion image
 red_potion = scale_img(pygame.image.load('assets/images/items/potion_red.png').convert_alpha(), constants.POTION_SCALE)
 
+item_images = []
 
+item_images.append(coin_images)
+item_images.append(red_potion)
 
 #load weapon images
 bow_image = scale_img(pygame.image.load('assets/images/weapons/bow.png').convert_alpha(), constants.WEAPON_SCALE)
@@ -112,6 +115,10 @@ def draw_info():
         else:
             screen.blit(heart_empty, (10 + i * 50, 0))
 
+
+    # level
+    draw_text('Level: ' + str(level), font, constants.WHITE, constants.SCREEN_WIDTH /2, 15)
+
     #show score
     draw_text(f'X{player.score}', font, constants.WHITE, constants.SCREEN_WIDTH - 100, 15)
 
@@ -133,7 +140,7 @@ with open(f"levels/level{level}_data.csv", newline="") as csvfile:
 
 
 world = World()
-world.process_data(world_data, tile_list)
+world.process_data(world_data, tile_list, item_images, mob_animations)
 
 
 # def draw_grid():
@@ -164,6 +171,10 @@ class DamageText(pygame.sprite.Sprite):
     
 
     def update(self):
+        #reposition based on screen scroll
+        self.rect.x += screen_scroll[0]
+        self.rect.y += screen_scroll[1]
+
         # move damage text up
         self.rect.y -= 1
         #delete the counter after a few seconds
@@ -172,19 +183,19 @@ class DamageText(pygame.sprite.Sprite):
             self.kill()
 
 
-## create player
-player = Character(400, 300, 30, mob_animations,0)
+# ## create player
+player = world.player
 
 # create enemy 
-enemy = Character(200, 300, 100, mob_animations, 1)
+# enemy = Character(300, 300, 100, mob_animations, 1)
 
 
 # create players weapon
 bow = Weapon(bow_image, arrow_image)
 
-# create empty enemy list
-enemy_list = []
-enemy_list.append(enemy)
+# extract enemies from world data
+enemy_list = world.character_list
+# enemy_list.append(enemy)
 
 # create sprite groups
 damage_text_group = pygame.sprite.Group()
@@ -196,13 +207,15 @@ arrow_group = pygame.sprite.Group()
 
 item_group = pygame.sprite.Group()
 
-score_coin = Item(constants.SCREEN_WIDTH - 115, 23, 0, coin_images)
+score_coin = Item(constants.SCREEN_WIDTH - 115, 23, 0, coin_images,True)
 item_group.add(score_coin)
+#ad the items from the level data
+for item in world.item_list:
+    item_group.add(item)
 
-potion = Item(200, 200, 1, [red_potion])
-item_group.add(potion)
-coin = Item(400, 400, 0, coin_images)
-item_group.add(coin)
+
+
+
 
 
 run = True
@@ -230,11 +243,11 @@ while run:
     
     # move player
     screen_scroll = player.move(dx, dy)
-    print(screen_scroll)
 
 
     #creating enemies
     for enemy in enemy_list:
+        enemy.ai(screen_scroll)
         enemy.update()
     for enemy in enemy_list:
         enemy.draw(screen)
@@ -251,7 +264,7 @@ while run:
     
     # arrow_group.draw(screen)
     for arrow in arrow_group:
-        damage, damage_pos = arrow.update(enemy_list)
+        damage, damage_pos = arrow.update(screen_scroll, enemy_list)
         if damage:
             damage_text = DamageText(damage_pos.centerx, damage_pos.y, str(damage),constants.RED)
             damage_text_group.add(damage_text)
@@ -263,7 +276,7 @@ while run:
 
 
     
-    item_group.update(player)
+    item_group.update(screen_scroll , player)
     item_group.draw(screen)
 
 

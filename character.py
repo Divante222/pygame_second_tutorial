@@ -3,8 +3,9 @@ import constants
 import math
 
 class Character():
-    def __init__(self, x, y, health, mob_animation, char_type):
+    def __init__(self, x, y, health, mob_animation, char_type, boss, size):
         self.char_type = char_type
+        self.boss = boss
         self.score = 0
         self.animation_list = mob_animation[char_type]
         self.flip = False
@@ -17,7 +18,9 @@ class Character():
 
 
         self.image = self.animation_list[self.action][self.frame_index]
-        self.rect = pygame.Rect(0,0, constants.TILE_SIZE, constants.TILE_SIZE)
+        
+        self.rect = pygame.Rect(0,0, constants.TILE_SIZE * size, constants.TILE_SIZE * size)
+        
         self.rect.center = (x,y)
 
 
@@ -62,6 +65,12 @@ class Character():
 
 
             return screen_scroll
+
+
+    def ai(self, screen_scroll):
+        #reposition the mobs based on screen scroll
+        self.rect.x += screen_scroll[0]
+        self.rect.y += screen_scroll[1]
 
     def update(self):
         #chekc if character has died
